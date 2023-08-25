@@ -1,0 +1,19 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+
+    <h2>My Listings</h2>
+        
+    {% if listings %}
+        <ul>
+            {% for listing in listings %}
+                <li><a href="{% url 'display_listing' listing_id=listing.id %}">{{ listing.item_name }}</a></li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>You have no active listings.</p>
+    {% endif %}
+
+    <a href="{% url 'create_listing' %}">Create New Listing</a>
+
+{% endblock %}

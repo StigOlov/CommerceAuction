@@ -1,0 +1,15 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Your submitted listing</h2>
+
+    <h1>{{ listing.item_name }}</h1>
+    <p>Item Price: ${{ listing.item_price}}</p>
+    <p>Starting Bid: ${{ listing.starting_bid}}</p>
+    <p>Closing Date: {{ listing.closing_date}}</p>
+    <p>Description: {{ listing.description}}</p>
+
+    <a href="{% url 'my_listings' %}">My listings</a>
+
+
+{% endblock %}
