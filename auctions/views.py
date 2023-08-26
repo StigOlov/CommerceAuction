@@ -76,7 +76,7 @@ def create_listing(request):
             description = form.cleaned_data['description']
             category_choice = form.cleaned_data['category']
 
-            category_instance = Category.objects.get(name=category_choice)
+            category_choice = Category.objects.get(name=category_choice)
         
 
             new_listing = Auction_listings(
@@ -86,7 +86,7 @@ def create_listing(request):
                 starting_bid=starting_bid,
                 closing_date=closing_date,
                 description=description,
-                category=category_instance
+                category=category_choice
             )
             new_listing.save()
             
