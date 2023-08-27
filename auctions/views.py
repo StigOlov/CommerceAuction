@@ -6,6 +6,8 @@ from django.urls import reverse
 from .forms import CreateListingForm
 from .models import Auction_listings, Category
 from django.contrib.auth.decorators import login_required
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from io import BytesIO
 
 from .models import User
 
@@ -74,10 +76,14 @@ def create_listing(request):
             starting_bid = form.cleaned_data['starting_bid']
             closing_date = form.cleaned_data['closing_date']
             description = form.cleaned_data['description']
-            category_choice = form.cleaned_data['category']
+            category = form.cleaned_data['category']
+            image = form.cleaned_data['image']
+            if isinstance(image, InMemoryUploadedFile):
+                new_listing.image = image
 
-            category_choice = Category.objects.get(name=category_choice)
-        
+            category = Category.objects.get(name=category)
+
+            print(f"category: {category}")  # Add this line to print the value
 
             new_listing = Auction_listings(
                 user_id=request.user,
@@ -86,7 +92,8 @@ def create_listing(request):
                 starting_bid=starting_bid,
                 closing_date=closing_date,
                 description=description,
-                category=category_choice
+                category=category,
+                image = image
             )
             new_listing.save()
             

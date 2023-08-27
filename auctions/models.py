@@ -6,24 +6,26 @@ class User(AbstractUser):
     pass
 
 class Category(models.Model):
-    FURNITURE = 'Furniture'
-    TOYS = 'Toys'
-    CLOTHES = 'Clothes'
-    SPORTS = 'Sports'
-    TECHNOLOGY = 'Technology'
-    KITCHEN = 'Kitchen'
-    OTHER = 'Other'
+    Furniture = 'Furniture'
+    Toys = 'Toys'
+    Clothes = 'Clothes'
+    Sports = 'Sports'
+    Technology = 'Technology'
+    Kitchen = 'Kitchen'
+    Other = 'Other'
 
     CATEGORY_CHOICES = [
-        (FURNITURE, 'Furniture'),
-        (TOYS, 'Toys'),
-        (CLOTHES, 'Clothes'),
-        (SPORTS, 'Sports'),
-        (TECHNOLOGY, 'Technology'),
-        (KITCHEN, 'Kitchen'),
-        (OTHER, 'Other'),
-        # Add more categories as needed
+        (Furniture, 'Furniture'),
+        (Toys, 'Toys'),
+        (Clothes, 'Clothes'),
+        (Sports, 'Sports'),
+        (Technology, 'Technology'),
+        (Kitchen, 'Kitchen'),
+        (Other, 'Other'),
     ]
+
+    def __str__(self):
+        return self.name
 
     name = models.CharField(max_length=50)
 
@@ -35,6 +37,7 @@ class Auction_listings(models.Model):
     starting_bid = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.CharField(max_length=500)
     closing_date = models.DateTimeField()
+    image = models.ImageField(upload_to='auction_images/', null=True, blank=True)
 
 class Bid(models.Model):
     listing_id = models.ForeignKey(Auction_listings, on_delete=models.CASCADE)

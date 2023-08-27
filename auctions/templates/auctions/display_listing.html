@@ -7,7 +7,11 @@
     <p>Item Price: ${{ listing.item_price}}</p>
     <p>Starting Bid: ${{ listing.starting_bid}}</p>
     <p>Closing Date: {{ listing.closing_date}}</p>
+    <p> Category: {{ listing.category }}</p>
     <p>Description: {{ listing.description}}</p>
+    {% if new_listing.image %}
+    <img src="{{ new_listing.image.url }}" alt="Listing Image">
+    {% endif %}
 
     <a href="{% url 'my_listings' %}">My listings</a>
 

@@ -8,5 +8,6 @@ class CreateListingForm(forms.Form):
     closing_date = forms.DateTimeField(required=False, widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}))
     description = forms.CharField(widget=forms.Textarea)
     category = forms.ChoiceField(choices=Category.CATEGORY_CHOICES)
+    image = forms.ImageField(required=False)
 
     
