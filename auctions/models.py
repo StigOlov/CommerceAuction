@@ -39,6 +39,9 @@ class Auction_listings(models.Model):
     closing_date = models.DateTimeField()
     image = models.ImageField(upload_to='auction_images/', null=True, blank=True)
 
+    def __str__(self):
+        return self.item_name
+
 class Bid(models.Model):
     listing_id = models.ForeignKey(Auction_listings, on_delete=models.CASCADE)
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -52,6 +55,9 @@ class Bid(models.Model):
         ('losing', 'Losing'),
     ]
     status = models.CharField(max_length=10, choices=BID_STATUS_CHOICES)
+
+    def __str__(self):
+        return self.item_name
 
 class Comments(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)

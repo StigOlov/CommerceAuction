@@ -1,13 +1,15 @@
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, migrations, models
 from django.http import HttpResponse, HttpResponseRedirect
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404, reverse
 from django.urls import reverse
 from .forms import CreateListingForm
-from .models import Auction_listings, Category
+from .models import Auction_listings, Category, Bid, Comments
 from django.contrib.auth.decorators import login_required
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from io import BytesIO
+from django.utils import timezone
+from django.contrib import messages
 
 from .models import User
 
@@ -67,9 +69,10 @@ def register(request):
     else:
         return render(request, "auctions/register.html")
     
+@login_required
 def create_listing(request):
     if request.method == 'POST':
-        form = CreateListingForm(request.POST)
+        form = CreateListingForm(request.POST, request.FILES)
         if form.is_valid():
             item_name = form.cleaned_data['item_name']
             item_price = form.cleaned_data['item_price']
@@ -78,12 +81,8 @@ def create_listing(request):
             description = form.cleaned_data['description']
             category = form.cleaned_data['category']
             image = form.cleaned_data['image']
-            if isinstance(image, InMemoryUploadedFile):
-                new_listing.image = image
 
             category = Category.objects.get(name=category)
-
-            print(f"category: {category}")  # Add this line to print the value
 
             new_listing = Auction_listings(
                 user_id=request.user,
@@ -98,20 +97,69 @@ def create_listing(request):
             new_listing.save()
             
             return redirect('display_listing', listing_id=new_listing.id)
+        else:
+            print("Form is invalid")
+            print(form.errors)  # Print the form validation errors
+
     else:
         form = CreateListingForm()
     return render(request, 'auctions/create_listing.html', {'form': form})
 
 def display_listing(request, listing_id):
     listing = get_object_or_404(Auction_listings, pk=listing_id)
+    comments = Comments.objects.filter(listing_id=listing)
     return render(request, 'auctions/display_listing.html', {
-        'listing': listing
+        'listing': listing,
+        'comments': comments
     })
+
+def place_comment(request, listing_id):
+    listing = get_object_or_404(Auction_listings, pk=listing_id)
+    comment_text = request.POST['comment_text']
+
+    comment = Comments(
+    listing_id=listing,
+    user_id=request.user,
+    content=comment_text,
+    timestamp=timezone.now()
+    )
+    comment.save()
+
+    return HttpResponseRedirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+
+def place_bid(request, listing_id):
+    listing = get_object_or_404(Auction_listings, pk=listing_id)
+    
+    bid_amount = float(request.POST['bid_amount'])
+    if bid_amount >= listing.starting_bid and bid_amount > listing.item_price:
+        bid = Bid(
+            listing_id=listing,
+            user_id=request.user,
+            item_name=listing.item_name,
+            amount=bid_amount,
+            timestamp=timezone.now()
+        )
+        bid.save()
+        listing.item_price = bid_amount
+        listing.save()
+        messages.success(request, 'Your bid has been places sucessfully')
+        return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
+    else:
+        messages.error(request, 'Your bid amount must be greater than the current price and starting bid.')
+        return render(request, 'auctions/display_listing.html', {'listing': listing})
+    
+def active_listings(request):
+    active_listings = Auction_listings.objects.filter(closing_date__gte=timezone.now())
+    return render(request, 'auctions/active_listings.html', {
+        'active_listings': active_listings
+    })
+
 
 def my_listings(request):
     user = request.user
     listings = Auction_listings.objects.filter(user_id=user)
     return render(request, 'auctions/my_listings.html', {
         'listings': listings})
+
 
 
