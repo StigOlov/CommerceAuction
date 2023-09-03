@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
+
 class User(AbstractUser):
     pass
 
@@ -64,6 +65,15 @@ class Comments(models.Model):
     listing_id = models.ForeignKey(Auction_listings, on_delete=models.CASCADE)
     content = models.CharField(max_length=300)
     timestamp = models.DateTimeField()
+
+class Watchlist(models.Model):
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    listing_id = models.ForeignKey(Auction_listings, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Watchlist Item"
+
 
 
 

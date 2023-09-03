@@ -4,7 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse
 from django.urls import reverse
 from .forms import CreateListingForm
-from .models import Auction_listings, Category, Bid, Comments
+from .models import Auction_listings, Category, Bid, Comments, Watchlist
 from django.contrib.auth.decorators import login_required
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from io import BytesIO
@@ -108,9 +108,15 @@ def create_listing(request):
 def display_listing(request, listing_id):
     listing = get_object_or_404(Auction_listings, pk=listing_id)
     comments = Comments.objects.filter(listing_id=listing)
+    current_highest_bid = Bid.objects.filter(listing_id=listing).order_by('-amount').first()
+    highest_bidder_name = current_highest_bid.user_id.username if current_highest_bid else None
+    
+    print(highest_bidder_name)
+    
     return render(request, 'auctions/display_listing.html', {
         'listing': listing,
-        'comments': comments
+        'comments': comments,
+        'highest_bidder_username': highest_bidder_name
     })
 
 def place_comment(request, listing_id):
@@ -132,12 +138,19 @@ def place_bid(request, listing_id):
     
     bid_amount = float(request.POST['bid_amount'])
     if bid_amount >= listing.starting_bid and bid_amount > listing.item_price:
+        current_highest_bid = Bid.objects.filter(listing_id=listing, status="winning").order_by('-amount').first()
+
+        if current_highest_bid:
+            current_highest_bid.status = "losing"
+            current_highest_bid.save()
+
         bid = Bid(
             listing_id=listing,
             user_id=request.user,
             item_name=listing.item_name,
             amount=bid_amount,
-            timestamp=timezone.now()
+            timestamp=timezone.now(),
+            status="winning"
         )
         bid.save()
         listing.item_price = bid_amount
@@ -162,4 +175,42 @@ def my_listings(request):
         'listings': listings})
 
 
+@login_required
+def add_to_watchlist(request, listing_id):
+    listing = get_object_or_404(Auction_listings, pk=listing_id)
+
+    # Check if the item is already in the user's watchlist
+    if Watchlist.objects.filter(user_id=request.user, listing_id=listing).exists():
+        messages.info(request, 'Listing is already in your watchlist.')
+    else:
+        # Add the item to the watchlist
+        watchlist_item = Watchlist(
+            user_id=request.user,
+            listing_id=listing,
+        )
+        watchlist_item.save()
+        messages.success(request, 'Listing added to your watchlist.')
+
+    # Redirect to the 'display_listing' view with the correct listing_id
+    return redirect('display_listing', listing_id=listing.id)
+
+@login_required
+def remove_from_watchlist(request, listing_id):
+    listing = get_object_or_404(Auction_listings, pk=listing_id)
+    user_id = request.user
+
+    watchlist_item = Watchlist.objects.filter(user_id=user_id, listing_id=listing).first()
+    if watchlist_item:
+        watchlist_item.delete()
+    
+    return redirect('display_listing', listing_id=listing_id)
+
+@login_required
+def display_watchlist(request):
+    user_id = request.user
+    watchlist_items = Watchlist.objects.filter(user_id=user_id)
+    messages.info(request, 'This listing has been removed from your watchlist.')
+
+    return render(request, 'auctions/display_watchlist.html', {
+        'watchlist_items': watchlist_items})
 
