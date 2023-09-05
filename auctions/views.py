@@ -112,7 +112,7 @@ def display_listing(request, listing_id):
     highest_bidder_name = current_highest_bid.user_id.username if current_highest_bid else None
     
     print(highest_bidder_name)
-    
+
     return render(request, 'auctions/display_listing.html', {
         'listing': listing,
         'comments': comments,
@@ -161,6 +161,36 @@ def place_bid(request, listing_id):
         messages.error(request, 'Your bid amount must be greater than the current price and starting bid.')
         return render(request, 'auctions/display_listing.html', {'listing': listing})
     
+def my_bids(request):
+    user = request.user
+    listings_with_bids = Auction_listings.objects.filter(
+        bid__user_id=user
+    ).distinct()
+
+    listing_data = []  # This will store (listing_id, item_name, status) tuples
+
+    for listing in listings_with_bids:
+        current_bid = Bid.objects.filter(listing_id=listing).order_by('-amount').first()
+        if current_bid:
+            if current_bid.status == "winning":
+                status = 'Winning'
+            elif current_bid.status == "losing":
+                status = 'Losing'
+            else:
+                status = 'Unknown'
+        else: 
+            status = 'No Bids'
+
+        listing_data.append((listing.id, listing.item_name, status))
+        
+        print(listing_data)
+
+    return render(request, 'auctions/my_bids.html', {
+        'listing_data': listing_data,
+    })
+
+   
+
 def active_listings(request):
     active_listings = Auction_listings.objects.filter(closing_date__gte=timezone.now())
     return render(request, 'auctions/active_listings.html', {

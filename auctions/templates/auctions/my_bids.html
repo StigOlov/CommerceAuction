@@ -1,0 +1,21 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Your bids</h2>
+
+    {% if listing_data %}
+    <ul>
+        {% for listing_id, name, status in listing_data %}
+        <li>
+            <a href="{% url 'display_listing' listing_id=listing_id %}">
+                {{ name }} - Bid status: {{ status }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+    {{ else }}
+    <p> You have not placed any bids.</p>
+    {% endif%}
+
+    <a href="{% url 'my_listings' %}">My Listings</a>
+{% endblock %}           
