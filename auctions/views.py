@@ -155,7 +155,7 @@ def place_bid(request, listing_id):
         bid.save()
         listing.item_price = bid_amount
         listing.save()
-        messages.success(request, 'Your bid has been places sucessfully')
+        messages.success(request, 'Your bid has been placed sucessfully')
         return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
     else:
         messages.error(request, 'Your bid amount must be greater than the current price and starting bid.')
