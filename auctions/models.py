@@ -72,8 +72,7 @@ class Watchlist(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username}'s Watchlist Item"
-
+        return f'Watchlist entry for User: {self.user_id.username}, Listing: {self.listing_id.item_name}'
 
 
 

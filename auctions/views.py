@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.db import IntegrityError, migrations, models
+from django.db.models import Count
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404, reverse
 from django.urls import reverse
@@ -107,16 +108,33 @@ def create_listing(request):
 
 def display_listing(request, listing_id):
     listing = get_object_or_404(Auction_listings, pk=listing_id)
+    listing_owner = listing.user_id
     comments = Comments.objects.filter(listing_id=listing)
     current_highest_bid = Bid.objects.filter(listing_id=listing).order_by('-amount').first()
     highest_bidder_name = current_highest_bid.user_id.username if current_highest_bid else None
-    
-    print(highest_bidder_name)
+
+    current_highest_bid = Bid.objects.filter(listing_id=listing).order_by('-amount').first()
+    user_bid = Bid.objects.filter(listing_id=listing, user_id=request.user).first()
+    user_bid_amount = user_bid.amount if user_bid else None
+
+    # Calculate the difference in amounts, if the user was outbid
+    outbid_amount = None
+    outbidder_username = None
+    if current_highest_bid and user_bid and user_bid_amount < current_highest_bid.amount:
+        outbid_amount = current_highest_bid.amount - user_bid.amount
+        outbidder_username = current_highest_bid.user_id.username
+
+    if outbid_amount is not None:
+        messages.info(request, f"You were outbid by {outbidder_username} with ${outbid_amount:.2f}")
 
     return render(request, 'auctions/display_listing.html', {
         'listing': listing,
         'comments': comments,
-        'highest_bidder_username': highest_bidder_name
+        'highest_bidder_username': highest_bidder_name,
+        'current_highest_bid': current_highest_bid,
+        'outbid_amount': outbid_amount,
+        'outbidder_username': outbidder_username,
+        'listing_owner': listing_owner
     })
 
 def place_comment(request, listing_id):
@@ -190,7 +208,6 @@ def my_bids(request):
     })
 
    
-
 def active_listings(request):
     active_listings = Auction_listings.objects.filter(closing_date__gte=timezone.now())
     return render(request, 'auctions/active_listings.html', {
@@ -203,7 +220,6 @@ def my_listings(request):
     listings = Auction_listings.objects.filter(user_id=user)
     return render(request, 'auctions/my_listings.html', {
         'listings': listings})
-
 
 @login_required
 def add_to_watchlist(request, listing_id):
@@ -243,4 +259,38 @@ def display_watchlist(request):
 
     return render(request, 'auctions/display_watchlist.html', {
         'watchlist_items': watchlist_items})
+
+def delete_listing(request, listing_id):
+    listing = get_object_or_404(Auction_listings, pk=listing_id)
+    item_name = listing.item_name
+
+    if request.method == 'POST' and request.user == listing.user_id:
+        listing.delete()
+        return render(request, 'auctions/deletion_confirmation.html', {
+            'item_name': item_name})
+    
+def display_categories(request):
+    categories_with_counts = Category.objects.annotate(num_listings=Count('auction_listings'))
+
+    return render(request, 'auctions/display_categories.html', {
+        'categories_with_counts': categories_with_counts,
+    })
+
+def display_specific_category(request, category_name):
+    category = get_object_or_404(Category, name=category_name)
+    listings = Auction_listings.objects.filter(category=category)
+
+    return render(request, 'auctions/display_specific_category.html', {
+        'category': category,
+        'listings': listings,
+    })
+
+
+
+
+    
+            
+        
+    
+    
 

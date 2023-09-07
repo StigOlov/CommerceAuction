@@ -1,0 +1,14 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Listing Categories</h2>
+
+<ul>
+    {% for category in categories_with_counts %}
+    <li>
+    <a href="{% url 'display_specific_category' category_name=category.name %}">{{ category.name }}</a> - {{ category.num_listings }} listings
+    </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

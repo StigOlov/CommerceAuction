@@ -1,0 +1,9 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+<p> Your listing {{ item_name }} was successfully deleted! </p>
+
+<a href="{% url 'my_listings' %}">View and manage your other listings</a>
+<a href="{% url 'active_listings' %}">Browse other active listings</a>
+
+{% endblock %}

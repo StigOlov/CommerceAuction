@@ -19,8 +19,11 @@ urlpatterns = [
     path("add_to_watchlist/<int:listing_id>", views.add_to_watchlist, name="add_to_watchlist"),
     path("remove_from_watchlist/<int:listing_id>", views.remove_from_watchlist, name="remove_from_watchlist"),
     path("display_watchlist", views.display_watchlist, name="display_watchlist"),
-    path("my_bids", views.my_bids, name="my_bids")
-    
+    path("my_bids", views.my_bids, name="my_bids"),
+    path("delete_listing/<int:listing_id>", views.delete_listing, name="delete_listing"),
+    path("display_categories", views.display_categories, name="display_categories" ),
+    path("display_specific_category/<str:category_name>/", views.display_specific_category, name="display_specific_category")
+
     ]
 
 if settings.DEBUG:
