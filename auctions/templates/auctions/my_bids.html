@@ -13,9 +13,9 @@
         </li>
         {% endfor %}
     </ul>
-    {{ else }}
-    <p> You have not placed any bids.</p>
-    {% endif%}
+    {% else %}
+    <p>You have not yet placed any bids.</p>
+    {% endif %}
 
     <a href="{% url 'my_listings' %}">My Listings</a>
 {% endblock %}           

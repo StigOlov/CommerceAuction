@@ -11,6 +11,8 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from io import BytesIO
 from django.utils import timezone
 from django.contrib import messages
+from background_task import background
+from .tasks import check_closing_listing 
 
 from .models import User
 
@@ -126,6 +128,9 @@ def display_listing(request, listing_id):
 
     if outbid_amount is not None:
         messages.info(request, f"You were outbid by {outbidder_username} with ${outbid_amount:.2f}")
+    
+    if listing.is_closed is True:
+        messages.error(request, "This listing is closed.")
 
     return render(request, 'auctions/display_listing.html', {
         'listing': listing,
@@ -137,6 +142,7 @@ def display_listing(request, listing_id):
         'listing_owner': listing_owner
     })
 
+@login_required
 def place_comment(request, listing_id):
     listing = get_object_or_404(Auction_listings, pk=listing_id)
     comment_text = request.POST['comment_text']
@@ -151,15 +157,20 @@ def place_comment(request, listing_id):
 
     return HttpResponseRedirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
 
+@login_required
 def place_bid(request, listing_id):
     listing = get_object_or_404(Auction_listings, pk=listing_id)
+
+    if listing.is_closed is True:
+        messages.error(request, "This listing is closed.")
+        return redirect(reverse('display_listing', kwargs={'listing_id': listing_id}))
     
     bid_amount = float(request.POST['bid_amount'])
     if bid_amount >= listing.starting_bid and bid_amount > listing.item_price:
-        current_highest_bid = Bid.objects.filter(listing_id=listing, status="winning").order_by('-amount').first()
+        current_highest_bid = Bid.objects.filter(listing_id=listing, status="Winning").order_by('-amount').first()
 
         if current_highest_bid:
-            current_highest_bid.status = "losing"
+            current_highest_bid.status = "Losing"
             current_highest_bid.save()
 
         bid = Bid(
@@ -168,7 +179,7 @@ def place_bid(request, listing_id):
             item_name=listing.item_name,
             amount=bid_amount,
             timestamp=timezone.now(),
-            status="winning"
+            status="Winning"
         )
         bid.save()
         listing.item_price = bid_amount
@@ -179,6 +190,7 @@ def place_bid(request, listing_id):
         messages.error(request, 'Your bid amount must be greater than the current price and starting bid.')
         return render(request, 'auctions/display_listing.html', {'listing': listing})
     
+@login_required
 def my_bids(request):
     user = request.user
     listings_with_bids = Auction_listings.objects.filter(
@@ -188,33 +200,38 @@ def my_bids(request):
     listing_data = []  # This will store (listing_id, item_name, status) tuples
 
     for listing in listings_with_bids:
-        current_bid = Bid.objects.filter(listing_id=listing).order_by('-amount').first()
+        current_bid = Bid.objects.filter(listing_id=listing, user_id=user).order_by('-amount').first()
         if current_bid:
-            if current_bid.status == "winning":
-                status = 'Winning'
-            elif current_bid.status == "losing":
-                status = 'Losing'
+            if current_bid.status == "Winning":
+                status = "Winning"
+            elif current_bid.status == "Losing":
+                status = "Losing"
+            elif current_bid.status == "Won":
+                status = "Won"
+            elif current_bid.status == "Lost":
+                status = "Lost"
             else:
                 status = 'Unknown'
         else: 
             status = 'No Bids'
 
         listing_data.append((listing.id, listing.item_name, status))
-        
-        print(listing_data)
 
+    if not listing_data:
+        listing_data = None
+        
     return render(request, 'auctions/my_bids.html', {
         'listing_data': listing_data,
     })
 
-   
+@login_required
 def active_listings(request):
-    active_listings = Auction_listings.objects.filter(closing_date__gte=timezone.now())
+    active_listings = Auction_listings.objects.filter(is_closed=False)
     return render(request, 'auctions/active_listings.html', {
         'active_listings': active_listings
     })
 
-
+@login_required
 def my_listings(request):
     user = request.user
     listings = Auction_listings.objects.filter(user_id=user)
@@ -268,7 +285,8 @@ def delete_listing(request, listing_id):
         listing.delete()
         return render(request, 'auctions/deletion_confirmation.html', {
             'item_name': item_name})
-    
+
+@login_required
 def display_categories(request):
     categories_with_counts = Category.objects.annotate(num_listings=Count('auction_listings'))
 
@@ -284,6 +302,12 @@ def display_specific_category(request, category_name):
         'category': category,
         'listings': listings,
     })
+
+@background(schedule=60)
+def close_listing(request):
+    check_closing_listing()
+    print("listing closed successfully")
+    return render(request, 'auctions/close_listing.html')
 
 
 

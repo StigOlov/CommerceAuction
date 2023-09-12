@@ -39,6 +39,7 @@ class Auction_listings(models.Model):
     description = models.CharField(max_length=500)
     closing_date = models.DateTimeField()
     image = models.ImageField(upload_to='auction_images/', null=True, blank=True)
+    is_closed = models.BooleanField(default=False)
 
     def __str__(self):
         return self.item_name
@@ -50,10 +51,10 @@ class Bid(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     timestamp = models.DateTimeField()
     BID_STATUS_CHOICES = [
-        ('win', 'Won'),
-        ('lost', 'Lost'),
-        ('winning', 'Winning'),
-        ('losing', 'Losing'),
+        ('Won', 'Won'),
+        ('Lost', 'Lost'),
+        ('Winning', 'Winning'),
+        ('Losing', 'Losing'),
     ]
     status = models.CharField(max_length=10, choices=BID_STATUS_CHOICES)
 
